@@ -93,45 +93,17 @@ So the issue is **not corrupt userdata**. It is a kernel/F2FS/FBE mismatch or wr
 
 ## KeyMint / Keystore2 Status
 
-`vold` is present, but keymaster detection still fails:
-
+`vold` is present, but keymaster detection still fails: I:Keymaster_Ver::Unable to find vendor manifest
+I:Keymaster_Ver::Using keymaster version '' for decryption
+ 
 ```
 
-I:Keymaster_Ver::Unable to find vendor manifest
-I:Keymaster_Ver::Using keymaster version '' for decryption
+
 
 ````
 
 `keystore2` also crashes unless stopped in init.
 
----
-
-## BoardConfig Highlights
-
-```make
-# Dynamic partition layout
-BOARD_SUPER_PARTITION_GROUPS := oplus_dynamic_partitions
-BOARD_OPLUS_DYNAMIC_PARTITIONS_PARTITION_LIST := odm odm_dlkm product system system_ext vendor vendor_dlkm
-
-# Force vendor partitions to EROFS
-$(foreach p,$(BOARD_PARTITION_LIST),$(eval BOARD_$(p)IMAGE_FILE_SYSTEM_TYPE := erofs))
-
-# Storage
-BOARD_USERDATAIMAGE_FILE_SYSTEM_TYPE := f2fs
-
-# Critical crypto flags
-TW_INCLUDE_CRYPTO := true
-TW_INCLUDE_CRYPTO_FBE := true
-TW_USE_NEW_FBE_DECRYPTION := true
-TW_INCLUDE_KEYMINT := true
-TW_INCLUDE_FSCRYPT := true
-BOARD_FORCE_DISABLE_DM_VERITY := true
-BOARD_AVB_ENABLE := false
-
-# Inject vold from stock
-PRODUCT_COPY_FILES += \
-    device/oplus/ossi/recovery/root/system/bin/vold:root/sbin/vold
-````
 
 ---
 
