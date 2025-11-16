@@ -2,6 +2,7 @@
 # TWRP Device Tree – realme Narzo 60x 5G (RMX3782) / MT6835
 
 Device tree for building TWRP 3.7.x for **realme Narzo 60x 5G (RMX3782)**, based on **MediaTek MT6835 / Dimensity 6100+** platform.
+Twrp Branch 12.1
 
 This repo exists because the device boots TWRP successfully, but `/data` cannot be mounted or decrypted due to FBEv2 / Keymint / F2FS issues. All findings are documented here so other devs can help finish it.
 
@@ -11,9 +12,9 @@ This repo exists because the device boots TWRP successfully, but `/data` cannot 
 
 - **Device:** realme Narzo 60x 5G  
 - **Model:** RMX3782  
+- **Version:** Android 14, OS Based Android 13  
+- **OTA Version:** RMX3782.14.0.0.115(EX01SF01)  
 - **SoC:** MediaTek Dimensity 6100+ (MT6835)  
-- **CPU:** 2× Cortex-A76 + 6× Cortex-A55  
-- **GPU:** Mali-G57 MC2  
 - **Display:** 6.72" 2400×1080, 120Hz IPS LCD  
 - **Storage:** 128 GB UFS 2.2  
 - **OS Base:** Android 13 (realme UI 4.0)  
@@ -158,7 +159,7 @@ git clone https://github.com/Sairb1/rmx3782-mt6835-working-device-tree device/op
 
 . build/envsetup.sh
 lunch twrp_ossi-eng
-mka recoveryimage
+mka vendorbootimage 
 ```
 
 This tree uses **prebuilt dtb** and boots through `vendor_boot`.
@@ -174,8 +175,6 @@ Logs are included in this repo (`/logs`) for anyone who wants to debug further.
 PRs / forks / fixes welcome.
 
 ```
-
----
 
 Join t.me/realme11x
 ```
