@@ -1,0 +1,21 @@
+# --- Dynamic partitions (ERoFS, DO NOT MOUNT) ---
+/dev/block/mapper/system_a      /system        auto  ro,logical,slotselect,wait
+/dev/block/mapper/vendor_a      /vendor        auto  ro,logical,slotselect,wait
+/dev/block/mapper/product_a     /product       auto  ro,logical,slotselect,wait
+/dev/block/mapper/odm_a         /odm           auto  ro,logical,slotselect,wait
+
+# --- super partition ---
+/dev/block/by-name/super        /super         auto  ro,wait,slotselect
+
+# --- metadata ---
+/dev/block/by-name/metadata     /metadata      f2fs  wait,check,formattable,first_stage_mount
+
+# --- userdata ---
+/dev/block/by-name/userdata     /data          f2fs  wait,check,formattable,latemount,quota
+
+# --- cache ---
+/dev/block/by-name/cache        /cache         ext4  wait,check,formattable
+
+# --- nv partitions ---
+/dev/block/by-name/protect1     /mnt/vendor/protect_f   ext4  wait
+

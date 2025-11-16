@@ -1,0 +1,204 @@
+# init.recovery.mt6835.rc - final patched for Realme Narzo 60X (mt6835)
+# Purpose:
+#  - Robust mapper -> /dev/block/by-name linking (suffixed + unsuffixed)
+#  - Metadata dirs for vold/FBE
+#  - Vendor lib shims for keymaster/keymint
+#  - f2fs/erofs tools available in /sbin
+#  - wait_for_keymaster service to start vold cleanly (start vold via init)
+#  - RECOVERY PATCH: SELinux binderfs restorecon attempt + hard-stop keystore2 to avoid SIGSEGV spam
+#  - Uses /sbin/vold so vold can run from ramdisk before vendor is mounted (requires BoardConfig PRODUCT_COPY_FILES -> root/sbin/vold)
+
+on init
+    setprop sys.usb.configfs 1
+    setprop sys.usb.controller "11201000.usb0"
+
+on early-init
+    mkdir /dev/block/by-name 0775 root root
+    mkdir /dev/block/mapper 0775 root root
+
+    # RECOVERY PATCH: Prevent keystore2 from starting/crashing (best-effort)
+    exec u:r:init:s0 root root -- /system/bin/sh -c '
+        setprop ctl.stop keystore2 2>/dev/null || true
+        [ -e /system/bin/keystore2 ] && chmod 000 /system/bin/keystore2 2>/dev/null || true
+        [ -e /vendor/bin/keystore2 ] && chmod 000 /vendor/bin/keystore2 2>/dev/null || true
+    '
+
+on post-fs
+    # metadata dirs required by vold / FBE
+    mkdir /metadata 0700 root root
+    mkdir /metadata/vold 0700 root root
+    mkdir /metadata/vold/metadata_encryption 0700 root root
+
+    # Map boot0/boot1 for preloader compatibility
+    symlink /dev/block/sda /dev/block/mmcblk0boot0
+    symlink /dev/block/sdb /dev/block/mmcblk0boot1
+    symlink /dev/block/mmcblk0boot0 /dev/block/by-name/preloader_a
+    symlink /dev/block/mmcblk0boot1 /dev/block/by-name/preloader_b
+
+    # vendor hw lib dir for shimming required libs (keymaster/keymint)
+    mkdir /vendor/lib64/hw 0755 root root
+
+    # Ensure /sbin exists and populate f2fs/erofs tools for recovery
+    mkdir -p /sbin 0755 root root
+    exec u:r:init:s0 root root -- /system/bin/sh -c '
+        for bin in fsck.f2fs mkfs.f2fs fsck.erofs mkfs.erofs; do
+            if [ -e /system/bin/$bin ]; then
+                cp /system/bin/$bin /sbin/$bin 2>/dev/null || ln -s /system/bin/$bin /sbin/$bin 2>/dev/null || true
+                chmod 755 /sbin/$bin 2>/dev/null || true
+            fi
+        done
+    '
+
+    # Vendor -> hw symlink shim to help vendor HALs load inside recovery env
+    exec u:r:init:s0 root root -- /system/bin/sh -c '
+        for lib in libhwbinder.so libTEECommon.so libMcClient.so libkmsetkey.so libkeymaster4_1support.so libkeymint_support.so libbase.so libhidlbase.so; do
+            if [ -e /vendor/lib64/$lib ] && [ ! -e /vendor/lib64/hw/$lib ]; then
+                ln -s /vendor/lib64/$lib /vendor/lib64/hw/$lib 2>/dev/null || true
+            fi
+        done
+    '
+
+    # small pause for uevents/dmsetup
+    exec u:r:init:s0 root root -- /system/bin/sh -c 'sleep 0.08 || true'
+
+    # Robust mapper -> by-name linkage: create both suffixed and unsuffixed /dev/block/by-name entries
+    exec u:r:init:s0 root root -- /system/bin/sh -c '
+        MAX=80; SLEEP=0.08; N=0;
+        safe_ln() {
+            src="$1"; dst="$2";
+            [ -e "$src" ] || return 1;
+            if [ ! -e "$dst" ]; then
+                ln -s "$src" "$dst" 2>/dev/null || true;
+            fi
+            return 0;
+        }
+
+        while [ $N -lt $MAX ]; do
+            for m in /dev/block/mapper/*; do
+                [ -e "$m" ] || continue
+                name=$(basename "$m")
+                safe_ln "$m" "/dev/block/by-name/$name"
+                base=${name%_*}
+                if [ "$base" != "$name" ]; then
+                    safe_ln "$m" "/dev/block/by-name/$base"
+                fi
+            done
+
+            for b in /dev/block/*; do
+                [ -e "$b" ] || continue
+                case "$b" in
+                    /dev/block/mapper|/dev/block/by-name) continue ;;
+                esac
+                if [ -L "$b" ]; then
+                    bn=$(basename "$b")
+                    if [ ! -e "/dev/block/by-name/$bn" ]; then
+                        safe_ln "$b" "/dev/block/by-name/$bn"
+                    fi
+                fi
+            done
+
+            if [ -e /dev/block/mapper/userdata -o -e /dev/block/mapper/userdata_a -o -e /dev/block/by-name/userdata_a -o -e /dev/block/by-name/userdata ]; then
+                break
+            fi
+
+            N=$((N+1))
+            sleep $SLEEP
+        done
+
+        true
+    '
+
+on late-fs
+    # Recreate metadata dirs to ensure permissions & presence (late-fs is where vold should be considered)
+/sbin/mkdir -p /metadata 0700 root root 2>/dev/null || true
+/sbin/mkdir -p /metadata/vold 0700 root root 2>/dev/null || true
+/sbin/mkdir -p /metadata/vold/metadata_encryption 0700 root root 2>/dev/null || true
+
+    # small pause for mapper/by-name settle
+    exec u:r:init:s0 root root -- /system/bin/sh -c 'sleep 0.12 || true'
+
+    # RECOVERY PATCH: Attempt to fix SELinux context for binder devices (best-effort)
+    exec u:r:init:s0 root root -- /system/bin/sh -c '
+        if [ -x /system/bin/restorecon ]; then
+            /system/bin/restorecon -F /dev/binder* 2>/dev/null || true
+            /system/bin/restorecon -F /dev/binderfs/* 2>/dev/null || true
+        fi
+        [ -d /dev/binderfs ] && chmod 0755 /dev/binderfs 2>/dev/null || true
+    '
+
+    # If vold binary exists in ramdisk (/sbin/vold), trigger wait_for_keymaster service which will start vold in init control-flow.
+    exec u:r:init:s0 root root -- /system/bin/sh -c '
+        if [ -x /sbin/vold -o -x /vendor/bin/vold -o -x /system/bin/vold ]; then
+            setprop ctl.start wait_for_keymaster
+        fi
+    '
+
+    # idempotent vendor lib shims (cheap)
+    exec u:r:init:s0 root root -- /system/bin/sh -c '
+        for lib in libhwbinder.so libTEECommon.so libMcClient.so libkmsetkey.so libkeymaster4_1support.so libkeymint_support.so libbase.so libhidlbase.so; do
+            if [ -e /vendor/lib64/$lib ] && [ ! -e /vendor/lib64/hw/$lib ]; then
+                ln -s /vendor/lib64/$lib /vendor/lib64/hw/$lib 2>/dev/null || true
+            fi
+        done
+    '
+
+# Service: wait_for_keymaster
+service wait_for_keymaster /system/bin/sh -c '
+    I=0; MAX=100; SLEEP=0.1;
+    check_km() {
+        [ -e /dev/vndbinder ] && return 0
+        [ -e /dev/hwbinder ] && return 0
+        [ -e /vendor/lib64/libkeymaster4_1support.so ] && return 0
+        [ -e /vendor/lib64/libkeymint_support.so ] && return 0
+        if [ -n "$(ps | /system/bin/grep -E \"keymaster|km|keystore2\" | /system/bin/grep -v grep)" ]; then
+            return 0
+        fi
+        return 1
+    }
+
+    while [ $I -lt $MAX ]; do
+        if check_km; then
+            break
+        fi
+        I=$((I+1))
+        sleep $SLEEP
+    done
+
+    # Prefer vold in ramdisk (/sbin/vold). Fall back to vendor or system if present.
+    if [ -x /sbin/vold ]; then
+        setprop ctl.start vold
+    elif [ -x /vendor/bin/vold ]; then
+        setprop ctl.start vold
+    elif [ -x /system/bin/vold ]; then
+        setprop ctl.start vold
+    fi
+' class late_start user root group root seclabel u:r:init:s0 disabled oneshot
+
+# Primary vold service: runs from /sbin/vold when present in ramdisk (requires BoardConfig PRODUCT_COPY_FILES -> root/sbin/vold)
+service vold /sbin/vold
+    class late_start
+    user root
+    group root
+    seclabel u:r:vold:s0
+    disabled
+    oneshot
+
+# Vendor/system fallback definitions left disabled to avoid duplicate service conflicts.
+service vold_vendor /vendor/bin/vold
+    class late_start
+    user root
+    group root
+    seclabel u:r:vold:s0
+    disabled
+    oneshot
+
+service vold_system /system/bin/vold
+    class late_start
+    user root
+    group root
+    seclabel u:r:vold:s0
+    disabled
+    oneshot
+
+# End of init.recovery.mt6835.rc
+
