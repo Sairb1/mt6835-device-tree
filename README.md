@@ -69,21 +69,21 @@ fastboot format:userdata
 
 ```
 
-Kernel still reports:
-
-```
-
-F2FS-fs (sdc79): Magic Mismatch, valid(0xf2f52010) - read(0x89bc54f8)
+Kernel still reports: F2FS-fs (sdc79): Magic Mismatch, valid(0xf2f52010) - read(0x89bc54f8)
 F2FS-fs (sdc79): Can't find valid F2FS filesystem
 
-```
-
-And TWRP log:
 
 ```
 
-I:Can't probe device /dev/block/sdc79
+
+```
+
+And TWRP log: I:Can't probe device /dev/block/sdc79
 I:Unable to mount '/data'
+
+```
+
+
 
 ```
 
