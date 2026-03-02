@@ -1,0 +1,102 @@
+# Narzo 60X (ossi) MT6835 - TWRP recovery.fstab
+# Based on stock ROM fstab.mt6835
+# FBE v2 - aes-256-xts:aes-256-cts:v2+inlinecrypt_optimized
+
+# ── Logical / dynamic partitions ─────────────────────────────────────────────
+/system                 erofs  system                 flags=display=System;logical;slotselect;backup=1;flashimg=1
+/system                 ext4   system                 flags=display=System;logical;slotselect;backup=1;flashimg=1
+/vendor                 erofs  vendor                 flags=display=Vendor;logical;slotselect;backup=1;flashimg=1
+/vendor                 ext4   vendor                 flags=display=Vendor;logical;slotselect;backup=1;flashimg=1
+/product                erofs  product                flags=display=Product;logical;slotselect;backup=1;flashimg=1
+/product                ext4   product                flags=display=Product;logical;slotselect;backup=1;flashimg=1
+/system_ext             ext4   system_ext             flags=display=System_Ext;logical;slotselect;backup=1;flashimg=1
+/system_ext             erofs  system_ext             flags=display=System_Ext;logical;slotselect;backup=1;flashimg=1
+/odm                    erofs  odm                    flags=display=ODM;logical;slotselect;backup=1;flashimg=1
+/odm                    ext4   odm                    flags=display=ODM;logical;slotselect;backup=1;flashimg=1
+/vendor_dlkm            erofs  vendor_dlkm            flags=display=Vendor_DLKM;logical;slotselect;backup=1;flashimg=1
+/vendor_dlkm            ext4   vendor_dlkm            flags=display=Vendor_DLKM;logical;slotselect;backup=1;flashimg=1
+/odm_dlkm               erofs  odm_dlkm               flags=display=ODM_DLKM;logical;slotselect;backup=1;flashimg=1
+/odm_dlkm               ext4   odm_dlkm               flags=display=ODM_DLKM;logical;slotselect;backup=1;flashimg=1
+
+# ── Userdata (FBE v2) ────────────────────────────────────────────────────────
+# NOTE: Strip fscompress and sysfs_path — TWRP does not support those flags
+# Keep fileencryption and keydirectory — required for metadata decryption
+/data                   f2fs   /dev/block/by-name/userdata   flags=display=Data;backup=1;fileencryption=aes-256-xts:aes-256-cts:v2+inlinecrypt_optimized;keydirectory=/metadata/vold/metadata_encryption
+
+# ── Metadata partition (required for FBE v2 key storage) ─────────────────────
+/metadata               f2fs   /dev/block/by-name/metadata   flags=display=Metadata;backup=1;flashimg=1
+
+# ── Oplus reserve (used as cache) ─────────────────────────────────────────────
+/cache                  ext4   /dev/block/by-name/oplusreserve2  flags=display=Cache;backup=1;flashimg=1
+
+# ── Vendor protect partitions ────────────────────────────────────────────────
+/mnt/vendor/protect_f   ext4   /dev/block/by-name/protect1    flags=display=Protect_F;backup=1;flashimg=1
+/mnt/vendor/protect_s   ext4   /dev/block/by-name/protect2    flags=display=Protect_S;backup=1;flashimg=1
+/mnt/vendor/nvdata      ext4   /dev/block/by-name/nvdata      flags=display=NVData;backup=1;flashimg=1
+/mnt/vendor/nvcfg       ext4   /dev/block/by-name/nvcfg       flags=display=NVCfg;backup=1;flashimg=1
+/mnt/vendor/persist     ext4   /dev/block/by-name/persist     flags=display=Persist;backup=1;flashimg=1
+
+# ── AVB / vbmeta ─────────────────────────────────────────────────────────────
+/vbmeta                 emmc   /dev/block/by-name/vbmeta          flags=display=VBMeta;backup=1;flashimg=1
+/vbmeta_vendor          emmc   /dev/block/by-name/vbmeta_vendor   flags=display=VBMeta_Vendor;slotselect;backup=1;flashimg=1
+/vbmeta_system          emmc   /dev/block/by-name/vbmeta_system   flags=display=VBMeta_System;slotselect;backup=1;flashimg=1
+
+# ── Boot partitions ───────────────────────────────────────────────────────────
+/boot                   emmc   /dev/block/by-name/boot            flags=display=Boot;slotselect;backup=1;flashimg=1
+/vendor_boot            emmc   /dev/block/by-name/vendor_boot     flags=display=Vendor_Boot;backup=1;flashimg=1
+/init_boot              emmc   /dev/block/by-name/init_boot       flags=display=Init_Boot;backup=1;flashimg=1
+/dtbo                   emmc   /dev/block/by-name/dtbo            flags=display=DTBO;backup=1;flashimg=1
+/odmdtbo                emmc   /dev/block/by-name/odmdtbo         flags=display=ODM_DTBO;backup=1;flashimg=1
+
+# ── Firmware partitions ───────────────────────────────────────────────────────
+/tee1                   emmc   /dev/block/by-name/tee1            flags=display=TEE1;backup=1;flashimg=1
+/tee2                   emmc   /dev/block/by-name/tee2            flags=display=TEE2;backup=1;flashimg=1
+/gz1                    emmc   /dev/block/by-name/gz1             flags=display=GZ1;backup=1;flashimg=1
+/gz2                    emmc   /dev/block/by-name/gz2             flags=display=GZ2;backup=1;flashimg=1
+/scp1                   emmc   /dev/block/by-name/scp1            flags=display=SCP1;backup=1;flashimg=1
+/scp2                   emmc   /dev/block/by-name/scp2            flags=display=SCP2;backup=1;flashimg=1
+/sspm1                  emmc   /dev/block/by-name/sspm1           flags=display=SSPM1;backup=1;flashimg=1
+/sspm2                  emmc   /dev/block/by-name/sspm2           flags=display=SSPM2;backup=1;flashimg=1
+/dpm1                   emmc   /dev/block/by-name/dpm1            flags=display=DPM1;backup=1;flashimg=1
+/dpm2                   emmc   /dev/block/by-name/dpm2            flags=display=DPM2;backup=1;flashimg=1
+/mcupm1                 emmc   /dev/block/by-name/mcupm1          flags=display=MCUPM1;backup=1;flashimg=1
+/mcupm2                 emmc   /dev/block/by-name/mcupm2          flags=display=MCUPM2;backup=1;flashimg=1
+/spmfw                  emmc   /dev/block/by-name/spmfw           flags=display=SPMFW;backup=1;flashimg=1
+/gpueb                  emmc   /dev/block/by-name/gpueb           flags=display=GPUEB;backup=1;flashimg=1
+/apusys1                emmc   /dev/block/by-name/apusys1         flags=display=APUSYS1;backup=1;flashimg=1
+/apusys2                emmc   /dev/block/by-name/apusys2         flags=display=APUSYS2;backup=1;flashimg=1
+/mvpu_algo1             emmc   /dev/block/by-name/mvpu_algo1      flags=display=MVPU1;backup=1;flashimg=1
+/mvpu_algo2             emmc   /dev/block/by-name/mvpu_algo2      flags=display=MVPU2;backup=1;flashimg=1
+/vcp                    emmc   /dev/block/by-name/vcp             flags=display=VCP;backup=1;flashimg=1
+/ccu                    emmc   /dev/block/by-name/ccu             flags=display=CCU;backup=1;flashimg=1
+/mcf_ota                emmc   /dev/block/by-name/mcf_ota         flags=display=MCF_OTA;backup=1;flashimg=1
+/connsys_wifi           emmc   /dev/block/by-name/connsys_wifi    flags=display=ConnSys_WiFi;backup=1;flashimg=1
+/connsys_bt             emmc   /dev/block/by-name/connsys_bt      flags=display=ConnSys_BT;backup=1;flashimg=1
+
+# ── Modem partitions ──────────────────────────────────────────────────────────
+/md1img                 emmc   /dev/block/by-name/md1img          flags=display=MD1IMG;backup=1;flashimg=1
+/md1dsp                 emmc   /dev/block/by-name/md1dsp          flags=display=MD1DSP;backup=1;flashimg=1
+/md1arm7                emmc   /dev/block/by-name/md1arm7         flags=display=MD1ARM7;backup=1;flashimg=1
+/md3img                 emmc   /dev/block/by-name/md3img          flags=display=MD3IMG;backup=1;flashimg=1
+
+# ── Misc partitions ───────────────────────────────────────────────────────────
+/misc                   emmc   /dev/block/by-name/misc            flags=display=Misc;backup=1;flashimg=1
+/para                   emmc   /dev/block/by-name/para            flags=display=Para;backup=1;flashimg=1
+/logo                   emmc   /dev/block/by-name/logo            flags=display=Logo;backup=1;flashimg=1
+/expdb                  emmc   /dev/block/by-name/expdb           flags=display=EXPDB;backup=1;flashimg=1
+/seccfg                 emmc   /dev/block/by-name/seccfg          flags=display=SecCfg;backup=1;flashimg=1
+/pi_img                 emmc   /dev/block/by-name/pi_img          flags=display=PI_IMG;backup=1;flashimg=1
+/boot_para              emmc   /dev/block/by-name/boot_para       flags=display=Boot_Para;backup=1;flashimg=1
+/nvram                  emmc   /dev/block/by-name/nvram           flags=display=NVRAM;backup=1;flashimg=1
+/proinfo                emmc   /dev/block/by-name/proinfo         flags=display=Proinfo;backup=1;flashimg=1
+/lk1                    emmc   /dev/block/by-name/lk1             flags=display=LK1;backup=1;flashimg=1
+/bootloader2            emmc   /dev/block/by-name/bootloader2     flags=display=Bootloader2;backup=1;flashimg=1
+/otp                    emmc   /dev/block/by-name/otp             flags=display=OTP;backup=1;flashimg=1
+/persistent             emmc   /dev/block/by-name/frp             flags=display=FRP;backup=1;flashimg=1
+
+# ── External storage ──────────────────────────────────────────────────────────
+/external_sd  auto  /dev/block/mmcblk0p1  /dev/block/mmcblk0  flags=display=MicroSD;storage;wipeingui;removable
+/external_sd  auto  /dev/block/mmcblk1p1  /dev/block/mmcblk1  flags=display=MicroSD;storage;wipeingui;removable
+/usb-otg      auto  /dev/block/sda1  /dev/block/sda  flags=display=USB-OTG;storage;wipeingui;removable;backup=0
+/usb-otg      auto  /dev/block/sdb1  /dev/block/sdb  flags=display=USB-OTG;storage;wipeingui;removable;backup=0
+/usb-otg      auto  /dev/block/sdf1  /dev/block/sdf  flags=display=USB-OTG;storage;wipeingui;removable;backup=0

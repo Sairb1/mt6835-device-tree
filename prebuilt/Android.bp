@@ -1,0 +1,14 @@
+cat > device/oplus/ossi/prebuilt/Android.bp <<'EOF'
+// device/oplus/ossi/prebuilt/Android.bp
+cc_prebuilt_library_shared {
+    name: "android.security.apc-ndk_platform",
+    srcs: ["lib64/android.security.apc-ndk.so"],
+    stl: "none",
+    target: {
+        android_arm64: {
+            enabled: true,
+        },
+    },
+}
+EOF
+
