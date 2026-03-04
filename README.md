@@ -22,6 +22,45 @@
 | **Kernel** | Prebuilt GKI (boot header v4) |
 
 ---
+### Build TWRP for `ossi`
+
+#### 1. Clone the Device Tree
+
+```bash
+mkdir -p ~/twrp/device/oplus
+cd ~/twrp/device/oplus
+
+git clone https://github.com/Sairb1/mt6835-device-tree.git
+mv mt6835-device-tree ossi
+```
+
+#### 2. Setup Build Environment
+
+```bash
+cd ~/twrp
+source build/envsetup.sh
+```
+
+#### 3. Select Build Target
+
+```bash
+lunch twrp_ossi-ap2a-eng
+```
+
+#### 4. Build Vendor Boot Image
+
+```bash
+mka vendorbootimage -j$(nproc)
+```
+
+#### 5. Build Output
+
+After a successful build, the image will be located at:
+
+```
+out/target/product/ossi/vendor_boot.img
+```
+
 
 ## Status
 
@@ -48,9 +87,6 @@
 - Ubuntu 20.04 / 22.04 (native or **WSL2 only** — WSL1 not supported)
 - 16 GB RAM minimum
 
-Output: `out/target/product/ossi/vendor_boot.img`
-
-### Flash
 
 ```
 
