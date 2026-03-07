@@ -25,8 +25,8 @@
 
 ## Status
 
-Adb working
-twrp not booting 
+Adb working,
+twrp not booting, 
 idk abt decryption
 
 ---
