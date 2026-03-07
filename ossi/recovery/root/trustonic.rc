@@ -1,0 +1,19 @@
+on property:crypto.ready=1
+    start mobicore
+    start vendor.gatekeeper-trustonic
+    start vendor.keymint-trustonic
+
+on property:hwservicemanager.ready=true
+    start mobicore
+    start vendor.keymint-trustonic
+    start vendor.gatekeeper-trustonic
+
+on property:ro.crypto.state=unencrypted
+    stop mobicore
+    stop vendor.keymint-trustonic
+    stop vendor.gatekeeper-trustonic
+
+on property:twrp.decrypt.done=true
+    stop mobicore
+    stop vendor.keymint-trustonic
+    stop vendor.gatekeeper-trustonic

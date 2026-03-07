@@ -1,0 +1,14 @@
+# Dynamic Partitions
+ro.boot.dynamic_partitions=true
+
+# Postinstall
+ro.postinstall.fstab.prefix=/system
+
+# USB
+ro.sys.usb.storage.type=mtp
+
+# Platform
+ro.vendor.mediatek.platform=MT6835
+
+# Timezone (India)
+persist.sys.timezone=Asia/Kolkata

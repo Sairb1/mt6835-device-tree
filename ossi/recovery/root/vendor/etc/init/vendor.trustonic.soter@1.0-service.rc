@@ -1,0 +1,6 @@
+service vendor.soter-trustonic /vendor/bin/hw/vendor.trustonic.soter@1.0-service
+    class hal
+    user nobody
+    group nobody drmrpc
+    disabled
+    seclabel u:r:recovery:s0

@@ -1,0 +1,104 @@
+import /init.recovery.project.rc
+import /trustonic.rc
+import /tee.rc
+import /init.recovery.usb.rc
+
+on init
+    setprop sys.usb.configfs 1
+    setprop sys.usb.controller "11201000.usb0"
+    symlink /dev/block/platform/bootdevice /dev/block/bootdevice
+    export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/vendor/lib64/hw:/system/lib64/hw
+    setprop crypto.ready 1
+
+    # Create persist mountpoint early
+    mkdir /mnt/vendor/persist 0771 system system
+
+on fs
+    install_keyring
+
+on early-fs
+    start vold
+
+on late-fs
+    exec_start wait_for_keymaster
+
+on post-fs
+    symlink /dev/block/sda /dev/block/mmcblk0boot0
+    symlink /dev/block/sdb /dev/block/mmcblk0boot1
+    symlink /dev/block/mmcblk0boot0 /dev/block/by-name/preloader_a
+    symlink /dev/block/mmcblk0boot1 /dev/block/by-name/preloader_b
+    symlink /dev/block/by-name/preloader_a /dev/block/by-name/preloader_emmc_a
+    symlink /dev/block/by-name/preloader_b /dev/block/by-name/preloader_emmc_b
+    symlink /dev/block/by-name/preloader_a /dev/block/by-name/preloader_ufs_a
+    symlink /dev/block/by-name/preloader_b /dev/block/by-name/preloader_ufs_b
+    symlink /dev/block/mapper/pl_a /dev/block/by-name/preloader_raw_a
+    symlink /dev/block/mapper/pl_b /dev/block/by-name/preloader_raw_b
+    exec u:r:update_engine:s0 root root -- /system/bin/mtk_plpath_utils
+    start mtk.plpath.utils.link
+
+    # persist directories for MobiCore/TEE
+    chown system system /mnt/vendor/persist
+    chmod 0771 /mnt/vendor/persist
+    mkdir /mnt/vendor/persist/mcRegistry 0771 system system
+
+on post-fs-data
+    # MobiCore mcRegistry - needed for KeyMint key operations
+    mkdir /data/vendor 0771 system system
+    mkdir /data/vendor/mcRegistry 0775 system system
+    mkdir /data/vendor/key_provisioning 0771 system system
+
+    # Start TEE daemon before KeyMint
+    start mcDriverDaemon
+
+on boot
+    start vendor.boot-hal-1-2
+    start health-hal-2-1
+    setprop sys.usb.config adb
+
+# ── Services ──────────────────────────────────────────────────────────────────
+
+service mtk.plpath.utils.link /system/bin/mtk_plpath_utils
+    class main
+    user root
+    group root system
+    oneshot
+    disabled
+    seclabel u:r:recovery:s0
+
+service wait_for_keymaster /system/bin/wait_for_keymaster
+    user root
+    group root system
+    priority -20
+    ioprio rt 0
+    seclabel u:r:recovery:s0
+
+service vendor.boot-hal-1-2 /vendor/bin/hw/android.hardware.boot@1.2-service
+    interface android.hardware.boot@1.0::IBootControl default
+    interface android.hardware.boot@1.1::IBootControl default
+    interface android.hardware.boot@1.2::IBootControl default
+    class early_hal
+    user root
+    group root
+    seclabel u:r:recovery:s0
+
+# MobiCore TEE daemon - must start before KeyMint
+service mcDriverDaemon /vendor/bin/mcDriverDaemon
+    class core
+    user root
+    group root system
+    seclabel u:r:recovery:s0
+    oneshot
+
+# KeyMint 2.0
+service android.hardware.security.keymint-service /vendor/bin/hw/android.hardware.security.keymint-service
+    class early_hal
+    user root
+    group root system
+    seclabel u:r:recovery:s0
+
+# Gatekeeper
+service android.hardware.gatekeeper-service /vendor/bin/hw/android.hardware.gatekeeper-service
+    class early_hal
+    user root
+    group root system
+    seclabel u:r:recovery:s0
